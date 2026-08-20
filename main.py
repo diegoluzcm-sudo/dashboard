@@ -10,8 +10,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Performance Comercial", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
+
+# Reexecuta o app automaticamente para buscar alterações das planilhas sem interação manual.
+AUTO_REFRESH_MS = 5 * 60 * 1000
+st_autorefresh(interval=AUTO_REFRESH_MS, limit=None, key="planilhas_auto_refresh")
 
 # -----------------------------
 # Configuração das fontes
@@ -319,7 +324,7 @@ def render_tv_mode(screen, seconds, inicio, fim, contrato, meta_valor, percentua
 # Sidebar: fontes, metas e período
 # -----------------------------
 st.sidebar.title("Controle do dashboard")
-st.sidebar.caption("Os dados são recarregados automaticamente a cada 5 minutos.")
+st.sidebar.caption("Os dados são verificados automaticamente a cada 5 minutos, sem depender de novas solicitações.")
 periodo = st.sidebar.selectbox("Período", ["Hoje", "Últimos 7 dias", "Mês atual", "Últimos 3 meses", "Últimos 6 meses", "Personalizado"], index=2)
 hoje = pd.Timestamp.today().normalize()
 if periodo == "Hoje": inicio, fim = hoje, hoje
