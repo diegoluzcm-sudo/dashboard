@@ -199,9 +199,9 @@ def parse_cycle_dashboard(raw: pd.DataFrame):
         return pd.DataFrame(columns=["Lead", "Closer", "SDR", "Valor Contrato", "Valor Líquido", "Data"])
     df = raw.iloc[header + 1:].copy()
     df.columns = [str(x).strip() or f"col_{j}" for j, x in enumerate(raw.iloc[header].tolist())]
-    lead_col = next((c for c in df.columns if normalize_name(c) == "lead"), df.columns[0])
-    closer_col = next((c for c in df.columns if normalize_name(c) == "closer"), None)
-    sdr_col = next((c for c in df.columns if normalize_name(c) == "sdr"), None)
+    lead_col = next((c for c in df.columns if str(normalize_name(c)).strip().lower() == "lead"), df.columns[0])
+    closer_col = next((c for c in df.columns if str(normalize_name(c)).strip().lower() == "closer"), None)
+    sdr_col = next((c for c in df.columns if str(normalize_name(c)).strip().lower() == "sdr"), None)
     contrato_col = next((c for c in df.columns if ("valor" in str(c).lower() and ("contrato" in str(c).lower() or "meta" in str(c).lower()))), None)
     liquido_col = next((c for c in df.columns if "valor" in str(c).lower() and "liquido" in str(c).lower()), None)
     data_col = next((c for c in df.columns if "data" in str(c).lower() and ("fechamento" in str(c).lower() or "fech" in str(c).lower())), None)
