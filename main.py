@@ -192,7 +192,7 @@ def parse_cycle_dashboard(raw: pd.DataFrame):
     header = None
     for i in range(min(20, len(raw))):
         values = [str(v).strip().lower() for v in raw.iloc[i].tolist()]
-        if "lead" in values and any("closer" == v for v in values):
+        if any("lead" in normalize_name(v) for v in values) and any("closer" in normalize_name(v) for v in values):
             header = i
             break
     if header is None:
@@ -216,7 +216,8 @@ def parse_cycle_dashboard(raw: pd.DataFrame):
     result = result[(result["Lead"] != "") & ((result["Valor Contrato"] > 0) | (result["Valor Líquido"] > 0))].copy()
     if result.empty:
         return result
-    return result.groupby(["Lead", "Closer", "SDR"], dropna=False, as_index=False).agg({"Valor Contrato": "sum", "Valor Líquido": "sum", "Data": "min"})
+    # Cada Lead representa uma venda única; múltiplas linhas de contrato são consolidadas.
+    return result.groupby("Lead", as_index=False).agg({"Closer": "first", "SDR": "first", "Valor Contrato": "sum", "Valor Líquido": "sum", "Data": "min"})
 
 
 def parse_pre_vendas(raw: pd.DataFrame):
@@ -413,7 +414,11 @@ def filter_date(df, column):
         return df.iloc[0:0].copy()
     return df[df[column].notna() & (df[column] >= inicio) & (df[column] <= fim + pd.Timedelta(days=1))].copy()
 
-cycle_dashboard_filtered = filter_date(cycle_dashboard, "Data")
+# A aba Dashboard é a fonte oficial do mês. Se ela não tiver datas preenchidas, usa todas as linhas válidas da aba, evitando zerar o ranking.
+if not cycle_dashboard.empty and "Data" in cycle_dashboard and cycle_dashboard["Data"].notna().any():
+    cycle_dashboard_filtered = filter_date(cycle_dashboard, "Data")
+else:
+    cycle_dashboard_filtered = cycle_dashboard.copy()
 cycle_entry_filtered = filter_date(cycle, "Data Entrada")
 cycle_contact_filtered = filter_date(cycle, "Data Contato")
 cycle_meeting_filtered = filter_date(cycle, "Data Reunião")
@@ -485,7 +490,7 @@ st.markdown("<div class='section-kicker'>02 · Ranking financeiro e funil do per
 funil=pd.DataFrame({"Etapa":["Discadas","Contatadas","Agendadas","Realizadas","No-show","Vendas"],"Quantidade":[int(daily_filtered["Discadas"].sum()) if not daily_filtered.empty and "Discadas" in daily_filtered else 0,contatadas,agendadas,realizadas,noshow,vendas]})
 left,right=st.columns([1.15,1])
 with left:
-    st.markdown("<div class='panel'><div class='panel-title'>Ranking de vendas por valor · Closers</div><div class='panel-caption'>Contrato e líquido oficiais da aba Dashboard do ciclo.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel'><div class='panel-title'>Ranking de vendas por valor · Closers</div><div class='panel-caption'>Vendas únicas por Lead, contrato e líquido oficiais da aba Dashboard do ciclo.</div>", unsafe_allow_html=True)
     closer_chart = closer_rank.sort_values("Valor").copy()
     if not closer_chart.empty:
         closer_chart["Nome"] = closer_chart["Nome"].astype(str)
