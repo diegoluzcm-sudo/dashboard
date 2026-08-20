@@ -324,6 +324,7 @@ def render_tv_mode(screen, seconds, inicio, fim, contrato, meta_valor, percentua
 
     st.markdown(f"<div class='tv-footer'><span>Atualização automática a cada {seconds} segundos</span><span>Sem rolagem · tela {screen + 1} de {total_screens}</span></div>", unsafe_allow_html=True)
     if st.button("Sair do Modo TV", key="exit_tv"):
+        st.session_state["tv_active"] = False
         st.query_params.clear()
         st.rerun()
     tv_rotation(seconds, screen, total_screens)
@@ -364,6 +365,7 @@ st.sidebar.divider()
 st.sidebar.subheader("Apresentação")
 tv_seconds = st.sidebar.number_input("Trocar tela a cada (segundos)", min_value=5, max_value=300, value=20, step=5)
 if st.sidebar.button("Abrir Modo TV", type="primary", use_container_width=True):
+    st.session_state["tv_active"] = True
     st.query_params["tv"] = "1"
     st.query_params["tv_screen"] = "0"
     st.rerun()
@@ -416,6 +418,10 @@ def filter_date(df, column):
 # A aba Dashboard é a fonte oficial do mês. Se ela não tiver datas preenchidas, usa todas as linhas válidas da aba, evitando zerar o ranking.
 if not cycle_dashboard.empty and "Data" in cycle_dashboard and cycle_dashboard["Data"].notna().any():
     cycle_dashboard_filtered = filter_date(cycle_dashboard, "Data")
+    # Se o recorte selecionado não encontrar linhas, mantém a aba Dashboard visível
+    # para que o ranking oficial não desapareça por causa de datas incompletas ou formato misto.
+    if cycle_dashboard_filtered.empty:
+        cycle_dashboard_filtered = cycle_dashboard.copy()
 else:
     cycle_dashboard_filtered = cycle_dashboard.copy()
 cycle_entry_filtered = filter_date(cycle, "Data Entrada")
@@ -553,7 +559,8 @@ sdr_rank["Taxa Conversão"] = (sdr_rank["Vendas"] / sdr_rank["Realizadas"].repla
 # -----------------------------
 # Modo TV: telas financeiras, funil e rankings com rotação automática
 # -----------------------------
-tv_enabled = str(st.query_params.get("tv", "0")) == "1"
+tv_query = str(st.query_params.get("tv", "0")).strip().lower()
+tv_enabled = st.session_state.get("tv_active", False) or tv_query in {"1", "true", "on"}
 if tv_enabled:
     try:
         tv_screen = int(st.query_params.get("tv_screen", "0"))
