@@ -301,7 +301,7 @@ def render_tv_mode(screen, seconds, inicio, fim, contrato, meta_valor, percentua
     elif screen == 2:
         st.markdown("<div class='section-kicker'>03 · Funil comercial</div>", unsafe_allow_html=True)
         ff = go.Figure(go.Funnel(y=funil["Etapa"], x=funil["Quantidade"], textinfo="value+percent initial", marker=dict(color=["#5b8cff","#7da4ff","#f5bd3d","#70a1ff","#ff5a67","#2ed47a"])))
-        fig_theme(ff, 350)
+        fig_theme(ff, 285)
         st.plotly_chart(ff, use_container_width=True, config={"displayModeBar": False})
     elif screen == 3:
         st.markdown("<div class='section-kicker'>04 · Pré-vendas</div>", unsafe_allow_html=True)
@@ -455,6 +455,35 @@ meta_super = contrato + falta_super if resumo_mensal and falta_super else float(
 percentual_meta = (contrato / meta_valor * 100) if meta_valor else 0
 
 # -----------------------------
+# Modo TV prioritário: interrompe a renderização normal antes do cabeçalho
+# -----------------------------
+tv_query = str(st.query_params.get("tv", "0")).strip().lower()
+tv_enabled = st.session_state.get("tv_active", False) or tv_query in {"1", "true", "on"}
+if tv_enabled:
+    # A apresentação não deve renderizar o cabeçalho, cards e tabelas do dashboard normal.
+    # Monta apenas os rankings mínimos necessários para as telas TV.
+    if not cycle_dashboard_filtered.empty:
+        closer_rank_tv = cycle_dashboard_filtered.groupby("Closer", dropna=False).agg(Vendas=("Lead", "nunique"), Valor=("Valor Contrato", "sum"), Líquido=("Valor Líquido", "sum")).reset_index().rename(columns={"Closer": "Nome"})
+        closer_rank_tv = closer_rank_tv[closer_rank_tv["Nome"].astype(str).str.strip().ne("")].copy()
+    else:
+        closer_rank_tv = pd.DataFrame(columns=["Nome", "Vendas", "Valor", "Líquido"])
+    if not sdr_source.empty:
+        sdr_rank_tv = sdr_source.copy().rename(columns={"Nome": "Nome"})
+    else:
+        sdr_rank_tv = pd.DataFrame(columns=["Nome", "Vendas", "Realizadas", "No-show"])
+    for col in ["Vendas", "Realizadas", "No-show"]:
+        if col not in sdr_rank_tv.columns: sdr_rank_tv[col] = 0
+    if "Taxa Conversão" not in sdr_rank_tv.columns:
+        sdr_rank_tv["Taxa Conversão"] = (sdr_rank_tv["Vendas"] / sdr_rank_tv["Realizadas"].replace(0, 1) * 100).round(2)
+    try:
+        tv_screen = int(st.query_params.get("tv_screen", "0"))
+    except (TypeError, ValueError):
+        tv_screen = 0
+    funil_tv = pd.DataFrame({"Etapa": ["Discadas", "Contatadas", "Agendadas", "Realizadas", "No-show", "Vendas"], "Quantidade": [int(daily_filtered["Discadas"].sum()) if not daily_filtered.empty and "Discadas" in daily_filtered else 0, contatadas, agendadas, realizadas, noshow, vendas]})
+    render_tv_mode(tv_screen, tv_seconds, inicio, fim, contrato, meta_valor, percentual_meta, recebido, falta_meta, falta_super, funil_tv, sdr_rank_tv, closer_rank_tv, daily_filtered)
+    st.stop()
+
+# -----------------------------
 # Cabeçalho e status da conexão
 # -----------------------------
 st.markdown("<div class='section-kicker'>Sales performance cockpit · dados integrados</div>", unsafe_allow_html=True)
@@ -559,9 +588,7 @@ sdr_rank["Taxa Conversão"] = (sdr_rank["Vendas"] / sdr_rank["Realizadas"].repla
 # -----------------------------
 # Modo TV: telas financeiras, funil e rankings com rotação automática
 # -----------------------------
-tv_query = str(st.query_params.get("tv", "0")).strip().lower()
-tv_enabled = st.session_state.get("tv_active", False) or tv_query in {"1", "true", "on"}
-if tv_enabled:
+if False:
     try:
         tv_screen = int(st.query_params.get("tv_screen", "0"))
     except (TypeError, ValueError):
