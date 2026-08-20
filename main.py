@@ -202,9 +202,9 @@ def parse_cycle_dashboard(raw: pd.DataFrame):
     lead_col = next((c for c in df.columns if normalize_name(c) == "lead"), df.columns[0])
     closer_col = next((c for c in df.columns if normalize_name(c) == "closer"), None)
     sdr_col = next((c for c in df.columns if normalize_name(c) == "sdr"), None)
-    contrato_col = next((c for c in df.columns if "valor" in str(c).lower() and "contrato" in str(c).lower()), None)
+    contrato_col = next((c for c in df.columns if ("valor" in str(c).lower() and ("contrato" in str(c).lower() or "meta" in str(c).lower()))), None)
     liquido_col = next((c for c in df.columns if "valor" in str(c).lower() and "liquido" in str(c).lower()), None)
-    data_col = next((c for c in df.columns if "data fechamento" in str(c).lower()), None)
+    data_col = next((c for c in df.columns if "data" in str(c).lower() and ("fechamento" in str(c).lower() or "fech" in str(c).lower())), None)
     result = pd.DataFrame({
         "Lead": df[lead_col].astype(str).str.strip(),
         "Closer": df[closer_col].map(normalize_name) if closer_col else "",
@@ -458,7 +458,7 @@ st.markdown(f"<div class='hero-subtitle'>Período: <strong>{inicio.strftime('%d/
 if errors:
     st.warning("Alguma fonte não pôde ser carregada: " + " | ".join(errors))
 with st.expander("Status das fontes conectadas", expanded=False):
-    st.write({"Planilha de vendas": f"{len(sales)} linhas válidas", "Ciclo de vendas": f"{len(cycle)} leads", "Dashboard financeiro": f"{len(cycle_dashboard)} vendas com valores", "Pré-vendas": f"{len(daily)} dias", "SDRs detectados": ", ".join(sdr_source["Nome"].tolist()) if not sdr_source.empty else "nenhum"})
+    st.write({"Planilha de vendas": f"{len(sales)} linhas válidas", "Ciclo de vendas": f"{len(cycle)} leads", "Dashboard financeiro": f"{len(cycle_dashboard)} vendas com valores", "Closers no Dashboard": ", ".join(cycle_dashboard["Closer"].dropna().astype(str).unique().tolist()) if not cycle_dashboard.empty and "Closer" in cycle_dashboard else "nenhum", "Pré-vendas": f"{len(daily)} dias", "SDRs detectados": ", ".join(sdr_source["Nome"].tolist()) if not sdr_source.empty else "nenhum"})
 
 # -----------------------------
 # Financeiro
