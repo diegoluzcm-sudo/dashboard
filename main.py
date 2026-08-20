@@ -447,22 +447,56 @@ with r3:
     st.dataframe(closer_rank[["Nome", "Vendas", "Valor", "Taxa Fechamento"]].sort_values("Vendas", ascending=False).assign(Valor=lambda d: d["Valor"].map(brl)), hide_index=True, use_container_width=True, height=180)
     st.markdown("</div>", unsafe_allow_html=True)
 with r4:
-    st.markdown("<div class='panel'><div class='panel-title'>Ranking de realizadas por Closer</div><div class='panel-caption'>Reuniões realizadas atribuídas ao Closer no ciclo de vendas.</div>", unsafe_allow_html=True)
-    chart = closer_rank.sort_values("Realizadas").copy()
-    if not chart.empty:
-        winner = chart.loc[chart["Realizadas"].idxmax(), "Nome"]
-        chart["Nome"] = chart["Nome"].map(lambda x: "🏆 " + str(x) if x == winner else str(x))
-        fig = px.bar(chart, x="Realizadas", y="Nome", orientation="h", text="Realizadas", color="Realizadas", color_continuous_scale=[[0, "#284a91"], [1, "#5b8cff"]])
-        fig.update_traces(textposition="outside"); fig.update_layout(coloraxis_showscale=False, xaxis_title="Realizadas", yaxis_title=""); fig_theme(fig, 245); st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-    else: st.info("Nenhuma realizada por Closer no período.")
-    st.dataframe(closer_rank[["Nome", "Realizadas", "Vendas", "Taxa Fechamento"]].sort_values("Realizadas", ascending=False), hide_index=True, use_container_width=True, height=180)
+    st.markdown("<div class='panel'><div class='panel-title'>Ofertas pendentes e Riscos Zero</div><div class='panel-caption'>Cadastro manual separado das vendas realizadas; não entra na meta até a confirmação do pagamento.</div>", unsafe_allow_html=True)
+    st.metric("Valor pendente cadastrado", "R$ 0,00", "Preencha na aba Ofertas Pendentes abaixo")
+    st.markdown("Use a aba manual para informar loja, Closer, SDR, valor e condição.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
 # Tabela operacional e rodapé
 # -----------------------------
 st.markdown("<div class='section-kicker'>04 · Detalhamento operacional</div>",unsafe_allow_html=True)
-tab1,tab2=st.tabs(["Ciclo de Vendas","Vendas Fechadas"])
-with tab1: st.dataframe(cycle_filtered,use_container_width=True,hide_index=True,height=300)
-with tab2: st.dataframe(sales_filtered,use_container_width=True,hide_index=True,height=300)
+if "ofertas_pendentes" not in st.session_state:
+    st.session_state["ofertas_pendentes"] = pd.DataFrame(columns=["Data", "Loja", "Closer", "SDR", "Valor de Contrato", "Condição", "Status", "Observação"])
+
+tab1,tab2,tab3=st.tabs(["Ciclo de Vendas","Vendas Fechadas","Ofertas Pendentes / Riscos Zero"])
+with tab1:
+    st.dataframe(cycle_filtered,use_container_width=True,hide_index=True,height=300)
+with tab2:
+    st.dataframe(sales_filtered,use_container_width=True,hide_index=True,height=300)
+with tab3:
+    st.info("Cadastre aqui as ofertas que ainda não devem entrar na meta. O valor só será considerado em vendas quando o status for confirmado como pago na planilha oficial.")
+    col_a, col_b = st.columns([1, 1])
+    with col_a:
+        upload_pendentes = st.file_uploader("Importar ofertas pendentes (CSV ou Excel)", type=["csv", "xlsx"], key="upload_pendentes")
+    with col_b:
+        st.download_button("Baixar cadastro atual", st.session_state["ofertas_pendentes"].to_csv(index=False).encode("utf-8-sig"), "ofertas_pendentes.csv", "text/csv", key="download_pendentes")
+    if upload_pendentes is not None:
+        imported = read_uploaded(upload_pendentes)
+        if imported is not None and not imported.empty:
+            header_idx = 0
+            for i in range(min(12, len(imported))):
+                row_text = " ".join(imported.iloc[i].astype(str).tolist()).lower()
+                if "loja" in row_text or "valor" in row_text:
+                    header_idx = i
+                    break
+            imported.columns = imported.iloc[header_idx].astype(str).str.strip()
+            imported = imported.iloc[header_idx + 1:].reset_index(drop=True)
+            rename_map = {}
+            for col in imported.columns:
+                norm = re.sub(r"[^a-z0-9]", "", str(col).lower())
+                if "loja" in norm or "lead" in norm or "nome" in norm: rename_map[col] = "Loja"
+                elif "closer" in norm: rename_map[col] = "Closer"
+                elif "sdr" in norm or "hunter" in norm: rename_map[col] = "SDR"
+                elif "valor" in norm or "contrato" in norm: rename_map[col] = "Valor de Contrato"
+                elif "condicao" in norm or "modalidade" in norm: rename_map[col] = "Condição"
+                elif "status" in norm or "situacao" in norm: rename_map[col] = "Status"
+            imported = imported.rename(columns=rename_map)
+            for col in ["Data", "Loja", "Closer", "SDR", "Valor de Contrato", "Condição", "Status", "Observação"]:
+                if col not in imported.columns: imported[col] = ""
+            st.session_state["ofertas_pendentes"] = imported[["Data", "Loja", "Closer", "SDR", "Valor de Contrato", "Condição", "Status", "Observação"]].copy()
+    edited_pending = st.data_editor(st.session_state["ofertas_pendentes"], num_rows="dynamic", use_container_width=True, hide_index=True, key="editor_pendentes", column_config={"Valor de Contrato": st.column_config.NumberColumn("Valor de Contrato", format="R$ %.2f"), "Status": st.column_config.SelectboxColumn("Status", options=["Risco Zero - para cair", "Risco Zero - efetivado", "Garantia Incondicional", "Pendente"] )})
+    st.session_state["ofertas_pendentes"] = edited_pending
+    pending_total = sum(money(v) for v in edited_pending["Valor de Contrato"]) if not edited_pending.empty else 0
+    st.caption(f"Total cadastrado nesta sessão: {brl(pending_total)} · Estes valores ficam separados da meta até confirmação na planilha oficial.")
 st.markdown(f"<div class='footer'>Última atualização: {datetime.now().strftime('%d/%m/%Y às %H:%M')} · Fonte fixa: Google Sheets · Santana/Sant'Anna padronizado como Sant'Anna</div>",unsafe_allow_html=True)
