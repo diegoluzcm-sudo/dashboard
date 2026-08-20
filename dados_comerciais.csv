@@ -1,0 +1,63 @@
+Data,Vendedor,Produto,Valor,Status,Canal,Etapa
+2024-01-05,Ana Souza,Plano Pro,4800,Fechado,Indicação,Fechamento
+2024-01-12,Bruno Lima,Plano Básico,1900,Fechado,Site,Fechamento
+2024-01-18,Carla Mendes,Consultoria,7200,Fechado,LinkedIn,Fechamento
+2024-01-24,Diego Alves,Plano Enterprise,14500,Em negociação,Evento,Proposta
+2024-02-03,Elisa Costa,Plano Pro,5200,Fechado,Google Ads,Fechamento
+2024-02-09,Ana Souza,Software Premium,8600,Fechado,Indicação,Fechamento
+2024-02-14,Bruno Lima,Consultoria,6400,Perdido,Site,Negociação
+2024-02-22,Carla Mendes,Plano Básico,2100,Fechado,Instagram,Fechamento
+2024-02-27,Diego Alves,Plano Pro,5100,Em negociação,LinkedIn,Negociação
+2024-03-04,Elisa Costa,Plano Enterprise,16200,Fechado,Evento,Fechamento
+2024-03-11,Ana Souza,Consultoria,6800,Fechado,Google Ads,Fechamento
+2024-03-17,Bruno Lima,Software Premium,9200,Em negociação,Indicação,Proposta
+2024-03-25,Carla Mendes,Plano Pro,4900,Fechado,Site,Fechamento
+2024-03-29,Diego Alves,Plano Básico,1800,Perdido,Instagram,Qualificação
+2024-04-02,Elisa Costa,Consultoria,7500,Fechado,LinkedIn,Fechamento
+2024-04-08,Ana Souza,Plano Enterprise,15800,Em negociação,Evento,Proposta
+2024-04-15,Bruno Lima,Plano Pro,5300,Fechado,Google Ads,Fechamento
+2024-04-21,Carla Mendes,Software Premium,8800,Fechado,Indicação,Fechamento
+2024-04-28,Diego Alves,Consultoria,6100,Em negociação,Site,Negociação
+2024-05-05,Elisa Costa,Plano Básico,2200,Fechado,Instagram,Fechamento
+2024-05-10,Ana Souza,Software Premium,9500,Fechado,LinkedIn,Fechamento
+2024-05-16,Bruno Lima,Plano Enterprise,17100,Perdido,Evento,Proposta
+2024-05-23,Carla Mendes,Plano Pro,5600,Fechado,Google Ads,Fechamento
+2024-05-30,Diego Alves,Consultoria,6900,Em negociação,Indicação,Negociação
+2024-06-03,Elisa Costa,Plano Enterprise,14900,Fechado,Site,Fechamento
+2024-06-09,Ana Souza,Plano Básico,2000,Fechado,Instagram,Fechamento
+2024-06-14,Bruno Lima,Software Premium,9100,Em negociação,LinkedIn,Proposta
+2024-06-20,Carla Mendes,Consultoria,7300,Fechado,Evento,Fechamento
+2024-06-26,Diego Alves,Plano Pro,5000,Perdido,Google Ads,Negociação
+2024-07-04,Elisa Costa,Plano Básico,2300,Fechado,Indicação,Fechamento
+2024-07-11,Ana Souza,Consultoria,8100,Fechado,Site,Fechamento
+2024-07-18,Bruno Lima,Plano Pro,5400,Fechado,Instagram,Fechamento
+2024-07-24,Carla Mendes,Plano Enterprise,16800,Em negociação,LinkedIn,Proposta
+2024-07-30,Diego Alves,Software Premium,8700,Em negociação,Evento,Negociação
+2024-08-05,Elisa Costa,Consultoria,7600,Fechado,Google Ads,Fechamento
+2024-08-12,Ana Souza,Plano Pro,5700,Fechado,Indicação,Fechamento
+2024-08-19,Bruno Lima,Plano Básico,1950,Perdido,Site,Qualificação
+2024-08-25,Carla Mendes,Software Premium,9300,Fechado,Instagram,Fechamento
+2024-08-31,Diego Alves,Plano Enterprise,15500,Em negociação,LinkedIn,Proposta
+2024-09-03,Elisa Costa,Plano Pro,5500,Fechado,Evento,Fechamento
+2024-09-10,Ana Souza,Software Premium,9800,Fechado,Google Ads,Fechamento
+2024-09-16,Bruno Lima,Consultoria,6700,Em negociação,Indicação,Negociação
+2024-09-22,Carla Mendes,Plano Básico,2250,Fechado,Site,Fechamento
+2024-09-28,Diego Alves,Plano Pro,5900,Perdido,Instagram,Proposta
+2024-10-04,Elisa Costa,Plano Enterprise,17600,Fechado,LinkedIn,Fechamento
+2024-10-11,Ana Souza,Consultoria,7900,Fechado,Evento,Fechamento
+2024-10-18,Bruno Lima,Plano Pro,5100,Fechado,Google Ads,Fechamento
+2024-10-24,Carla Mendes,Software Premium,9600,Em negociação,Indicação,Proposta
+2024-10-30,Diego Alves,Plano Básico,2050,Fechado,Site,Fechamento
+2024-11-05,Elisa Costa,Consultoria,8200,Fechado,Instagram,Fechamento
+2024-11-12,Ana Souza,Plano Enterprise,18100,Em negociação,LinkedIn,Negociação
+2024-11-19,Bruno Lima,Software Premium,9400,Perdido,Evento,Proposta
+2024-11-26,Carla Mendes,Plano Pro,5800,Fechado,Google Ads,Fechamento
+2024-12-03,Diego Alves,Consultoria,7000,Em negociação,Indicação,Negociação
+2024-12-10,Elisa Costa,Plano Básico,2400,Fechado,Site,Fechamento
+2024-12-17,Ana Souza,Software Premium,10200,Fechado,Instagram,Fechamento
+2024-12-22,Bruno Lima,Plano Enterprise,16900,Fechado,LinkedIn,Fechamento
+2024-12-28,Carla Mendes,Consultoria,7800,Perdido,Evento,Negociação
+2025-01-06,Diego Alves,Plano Pro,6200,Fechado,Google Ads,Fechamento
+2025-01-14,Elisa Costa,Software Premium,9900,Em negociação,Indicação,Proposta
+2025-01-22,Ana Souza,Plano Enterprise,18500,Fechado,Site,Fechamento
+2025-01-29,Bruno Lima,Consultoria,7100,Fechado,Instagram,Fechamento
