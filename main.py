@@ -285,7 +285,8 @@ def tv_rotation(seconds, screen, total_screens):
 
 def render_tv_mode(screen, seconds, inicio, fim, contrato, meta_valor, percentual_meta, recebido, falta_meta, falta_super, funil, sdr_rank, closer_rank, daily_filtered):
     total_screens = 6
-    screen = screen % total_screens
+    rotation_tick = st_autorefresh(interval=max(1, int(seconds)) * 1000, limit=None, key="tv_rotation_refresh")
+    screen = (screen + int(rotation_tick or 0)) % total_screens
     periodo_label = f"{inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}"
     st.markdown("<div class='tv-mode-marker'></div>", unsafe_allow_html=True)
     st.markdown("<a class='tv-exit' href='?tv=0' target='_self'>Sair do Modo TV</a>", unsafe_allow_html=True)
@@ -323,7 +324,6 @@ def render_tv_mode(screen, seconds, inicio, fim, contrato, meta_valor, percentua
             st.markdown("<div class='tv-grid'>" + tv_card("Discadas", int(funil.loc[funil["Etapa"] == "Discadas", "Quantidade"].sum()), "Atividades do período", "positive") + tv_card("Contatadas", int(funil.loc[funil["Etapa"] == "Contatadas", "Quantidade"].sum()), "Leads contatados", "positive") + tv_card("Agendadas", int(funil.loc[funil["Etapa"] == "Agendadas", "Quantidade"].sum()), "Reuniões marcadas", "warning") + tv_card("Realizadas", int(funil.loc[funil["Etapa"] == "Realizadas", "Quantidade"].sum()), "Reuniões concluídas", "positive") + tv_card("No-show", int(funil.loc[funil["Etapa"] == "No-show", "Quantidade"].sum()), "Reuniões não realizadas", "critical") + tv_card("Vendas", int(funil.loc[funil["Etapa"] == "Vendas", "Quantidade"].sum()), "Fechamentos no período", "positive") + "</div>", unsafe_allow_html=True)
             st.markdown("<div class='panel' style='margin-top:.8rem'><div class='panel-title'>Ofertas pendentes / Risco Zero</div><div class='panel-caption'>Valores pendentes permanecem separados da meta até confirmação do pagamento.</div></div>", unsafe_allow_html=True)
         st.markdown(f"<div class='tv-footer'><span>Atualização automática a cada {seconds} segundos</span><span>Sem rolagem · tela {screen + 1} de {total_screens}</span></div>", unsafe_allow_html=True)
-    tv_rotation(seconds, screen, total_screens)
 
 
 # -----------------------------
