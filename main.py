@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Performance Comercial", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 
@@ -27,7 +28,7 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 :root{--bg:#080b12;--panel:#111722;--line:#263244;--text:#f5f7fb;--muted:#8793a8;--green:#2ed47a;--yellow:#f5bd3d;--red:#ff5a67;--blue:#5b8cff}
-html,body,[class*="css"]{font-family:'DM Sans',sans-serif}.stApp{background:radial-gradient(circle at 90% -10%,rgba(91,140,255,.13),transparent 32%),var(--bg);color:var(--text)}[data-testid="stHeader"]{background:transparent}.block-container{max-width:1500px;padding:1.5rem 2rem 1rem}h1,h2,h3{font-family:'Space Grotesk',sans-serif!important;color:var(--text)!important}.section-kicker{color:var(--blue);font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:1.25rem}.hero-subtitle,p,label{color:var(--muted)!important}.metric-card,.panel{background:linear-gradient(145deg,rgba(24,33,48,.98),rgba(14,20,31,.98));border:1px solid rgba(122,144,180,.18);border-radius:15px;box-shadow:0 14px 38px rgba(0,0,0,.18)}.metric-card{padding:1rem;min-height:120px}.metric-label{color:var(--muted);font-size:.75rem;font-weight:600}.metric-value{font-family:'Space Grotesk';font-size:1.45rem;font-weight:700;color:var(--text);margin-top:.5rem}.metric-note{font-size:.73rem;margin-top:.35rem}.positive{color:var(--green)}.warning{color:var(--yellow)}.critical{color:var(--red)}.panel{padding:1rem}.panel-title{font-family:'Space Grotesk';font-weight:600;color:var(--text);font-size:1.05rem}.panel-caption{font-size:.76rem;color:var(--muted)}.progress-shell{background:#293447;border-radius:99px;height:9px;overflow:hidden;margin-top:.6rem}.progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),#70a1ff);border-radius:99px;animation:grow 1.2s ease-out}@keyframes grow{from{width:0}}.footer{text-align:center;color:#657188;font-size:.72rem;border-top:1px solid rgba(122,144,180,.12);padding-top:1rem;margin-top:1.8rem}@media(max-width:800px){.block-container{padding:.8rem}.metric-card{min-height:105px;padding:.75rem}}
+html,body,[class*="css"]{font-family:'DM Sans',sans-serif}.stApp{background:radial-gradient(circle at 90% -10%,rgba(91,140,255,.13),transparent 32%),var(--bg);color:var(--text)}[data-testid="stHeader"]{background:transparent}.block-container{max-width:1500px;padding:1.5rem 2rem 1rem}h1,h2,h3{font-family:'Space Grotesk',sans-serif!important;color:var(--text)!important}.section-kicker{color:var(--blue);font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:1.25rem}.hero-subtitle,p,label{color:var(--muted)!important}.metric-card,.panel{background:linear-gradient(145deg,rgba(24,33,48,.98),rgba(14,20,31,.98));border:1px solid rgba(122,144,180,.18);border-radius:15px;box-shadow:0 14px 38px rgba(0,0,0,.18)}.metric-card{padding:1rem;min-height:120px}.metric-label{color:var(--muted);font-size:.75rem;font-weight:600}.metric-value{font-family:'Space Grotesk';font-size:1.45rem;font-weight:700;color:var(--text);margin-top:.5rem}.metric-note{font-size:.73rem;margin-top:.35rem}.positive{color:var(--green)}.warning{color:var(--yellow)}.critical{color:var(--red)}.panel{padding:1rem}.panel-title{font-family:'Space Grotesk';font-weight:600;color:var(--text);font-size:1.05rem}.panel-caption{font-size:.76rem;color:var(--muted)}.progress-shell{background:#293447;border-radius:99px;height:9px;overflow:hidden;margin-top:.6rem}.progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),#70a1ff);border-radius:99px;animation:grow 1.2s ease-out}@keyframes grow{from{width:0}}.footer{text-align:center;color:#657188;font-size:.72rem;border-top:1px solid rgba(122,144,180,.12);padding-top:1rem;margin-top:1.8rem}.tv-shell{min-height:calc(100vh - 3rem);display:flex;flex-direction:column;justify-content:space-between}.tv-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}.tv-title{font-family:'Space Grotesk';font-size:1.8rem;font-weight:700;color:var(--text)}.tv-subtitle{color:var(--muted);font-size:.85rem}.tv-badge{border:1px solid rgba(91,140,255,.45);color:#9bb7ff;border-radius:99px;padding:.35rem .7rem;font-size:.75rem;font-weight:700}.tv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem}.tv-card{background:linear-gradient(145deg,rgba(24,33,48,.98),rgba(14,20,31,.98));border:1px solid rgba(122,144,180,.18);border-radius:15px;padding:1.15rem;min-height:135px}.tv-card .metric-value{font-size:2rem}.tv-footer{display:flex;justify-content:space-between;align-items:center;color:#657188;font-size:.75rem;margin-top:.8rem;padding-top:.7rem;border-top:1px solid rgba(122,144,180,.12)}body:has(.tv-shell) [data-testid='stSidebar'],body:has(.tv-shell) [data-testid='stHeader']{display:none}body:has(.tv-shell) .block-container{max-width:1800px;padding:1rem 1.5rem}.tv-table{font-size:1rem}@media(max-width:1000px){.tv-grid{grid-template-columns:repeat(2,1fr)}.tv-title{font-size:1.35rem}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -255,6 +256,65 @@ def fig_theme(fig, height=330):
     fig.update_layout(template="plotly_dark", height=height, margin=dict(l=10,r=10,t=35,b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="DM Sans", color="#dbe4f3", size=11), xaxis=dict(gridcolor="#263244"), yaxis=dict(gridcolor="#263244"))
     return fig
 
+
+def tv_card(label, value, note="", tone=""):
+    return f"<div class='tv-card'><div class='metric-label'>{label}</div><div class='metric-value'>{value}</div><div class='metric-note {tone}'>{note}</div></div>"
+
+
+def tv_rotation(seconds, screen, total_screens):
+    components.html(f"""
+    <script>
+    const delay = {int(seconds)} * 1000;
+    setTimeout(() => {{
+      const parentWindow = window.parent;
+      const url = new URL(parentWindow.location.href);
+      const current = Number(url.searchParams.get('tv_screen') || '{screen}');
+      url.searchParams.set('tv', '1');
+      url.searchParams.set('tv_screen', String((current + 1) % {total_screens}));
+      parentWindow.location.href = url.toString();
+    }}, delay);
+    </script>
+    """, height=0)
+
+
+def render_tv_mode(screen, seconds, inicio, fim, contrato, meta_valor, percentual_meta, recebido, falta_meta, falta_super, funil, sdr_rank, closer_rank, daily_filtered):
+    screen = screen % 3
+    periodo_label = f"{inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}"
+    st.markdown("<div class='tv-shell'>", unsafe_allow_html=True)
+    st.markdown(f"<div class='tv-topbar'><div><div class='tv-title'>Performance Comercial</div><div class='tv-subtitle'>Modo TV · {periodo_label}</div></div><div class='tv-badge'>TELA {screen + 1}/3 · TROCA EM {seconds}s</div></div>", unsafe_allow_html=True)
+    if screen == 0:
+        st.markdown("<div class='section-kicker'>01 · Visão geral financeira</div>", unsafe_allow_html=True)
+        st.markdown("<div class='tv-grid'>" + tv_card("Valor de Contrato", brl(contrato), "Fonte: aba Dashboard", "positive") + tv_card("Meta", brl(meta_valor), "Objetivo do período", "warning") + tv_card("% da Meta Atingida", f"{percentual_meta:.2f}%", f"{brl(contrato)} de {brl(meta_valor)}", "warning") + tv_card("Valor Recebido", brl(recebido), "Valor líquido", "positive") + tv_card("Falta pra Meta", brl(falta_meta), "Saldo restante", "warning") + tv_card("Falta pra Super Meta", brl(falta_super), "Cenário stretch", "critical") + "</div>", unsafe_allow_html=True)
+        progress = min(max(percentual_meta, 0), 100)
+        st.markdown(f"<div class='panel' style='margin-top:1rem'><div class='panel-title'>Progresso da meta</div><div class='progress-shell'><div class='progress-bar' style='width:{progress:.2f}%'></div></div></div>", unsafe_allow_html=True)
+    elif screen == 1:
+        st.markdown("<div class='section-kicker'>02 · Funil comercial</div>", unsafe_allow_html=True)
+        ff = go.Figure(go.Funnel(y=funil["Etapa"], x=funil["Quantidade"], textinfo="value+percent initial", marker=dict(color=["#5b8cff","#7da4ff","#f5bd3d","#70a1ff","#ff5a67","#2ed47a"])))
+        fig_theme(ff, 540)
+        st.plotly_chart(ff, use_container_width=True, config={"displayModeBar": False})
+    else:
+        st.markdown("<div class='section-kicker'>03 · Rankings</div>", unsafe_allow_html=True)
+        left, right = st.columns(2)
+        with left:
+            st.markdown("<div class='panel'><div class='panel-title'>Vendas por SDR · Pré Vendas</div>", unsafe_allow_html=True)
+            st.dataframe(sdr_rank[["Nome", "Vendas", "Realizadas", "Taxa Conversão"]].sort_values("Vendas", ascending=False), hide_index=True, use_container_width=True, height=350)
+            st.markdown("</div>", unsafe_allow_html=True)
+        with right:
+            st.markdown("<div class='panel'><div class='panel-title'>Vendas por Closer</div>", unsafe_allow_html=True)
+            closer_display = closer_rank[["Nome", "Vendas", "Valor", "Líquido"]].sort_values("Valor", ascending=False).copy()
+            if not closer_display.empty:
+                closer_display["Valor"] = closer_display["Valor"].map(brl)
+                closer_display["Líquido"] = closer_display["Líquido"].map(brl)
+            st.dataframe(closer_display, hide_index=True, use_container_width=True, height=350)
+            st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='tv-footer'><span>Atualização automática a cada {seconds} segundos</span><span>Use o botão abaixo para sair do Modo TV</span></div>", unsafe_allow_html=True)
+    if st.button("Sair do Modo TV", key="exit_tv"):
+        st.query_params.clear()
+        st.rerun()
+    tv_rotation(seconds, screen, 3)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 # -----------------------------
 # Sidebar: fontes, metas e período
 # -----------------------------
@@ -285,6 +345,13 @@ cycle_url = st.sidebar.text_input("Planilha do ciclo de vendas", CYCLE_URL)
 cycle_upload = st.sidebar.file_uploader("Substituir ciclo por CSV/Excel", type=["csv", "xlsx"], key="cycle_upload")
 pre_url = st.sidebar.text_input("Planilha de realizadas dos SDRs", PRE_URL)
 pre_upload = st.sidebar.file_uploader("Substituir realizadas por CSV/Excel", type=["csv", "xlsx"], key="pre_upload")
+st.sidebar.divider()
+st.sidebar.subheader("Apresentação")
+tv_seconds = st.sidebar.number_input("Trocar tela a cada (segundos)", min_value=5, max_value=300, value=20, step=5)
+if st.sidebar.button("Abrir Modo TV", type="primary", use_container_width=True):
+    st.query_params["tv"] = "1"
+    st.query_params["tv_screen"] = "0"
+    st.rerun()
 
 # -----------------------------
 # Ingestão
@@ -427,12 +494,13 @@ else:
     sdr_rank = pd.DataFrame(columns=["Nome", "Contatadas", "Agendadas", "Vendas"])
 sdr_rank["Realizadas_Ciclo"] = 0
 if not sdr_source.empty:
-    fonte_sdr = sdr_source.rename(columns={"Realizadas": "Realizadas_Fonte", "No-show": "No-show_Fonte"})
+    fonte_sdr = sdr_source.rename(columns={"Realizadas": "Realizadas_Fonte", "No-show": "No-show_Fonte", "Vendas": "Vendas_Fonte"})
     sdr_rank = sdr_rank.merge(fonte_sdr, on="Nome", how="outer")
-for col in ["Contatadas", "Agendadas", "Vendas", "Realizadas_Ciclo", "Realizadas_Fonte", "No-show_Fonte"]:
+for col in ["Contatadas", "Agendadas", "Vendas", "Vendas_Fonte", "Realizadas_Ciclo", "Realizadas_Fonte", "No-show_Fonte"]:
     if col not in sdr_rank:
         sdr_rank[col] = 0
 sdr_rank = sdr_rank.fillna(0)
+sdr_rank["Vendas"] = sdr_rank["Vendas_Fonte"].astype(int)
 sdr_rank["Realizadas"] = sdr_rank["Realizadas_Fonte"].astype(int)
 sdr_rank["No-show"] = sdr_rank["No-show_Fonte"].astype(int)
 sdr_rank = sdr_rank[sdr_rank["Nome"].map(lambda x: re.sub(r"[^a-z]", "", str(x).lower().replace("á", "a").replace("í", "i")) in SDR_OFICIAIS)].copy()
@@ -449,9 +517,22 @@ else:
     closer_rank = pd.DataFrame(columns=["Nome", "Vendas", "Valor", "Líquido"])
 closer_rank = closer_rank[closer_rank["Nome"].astype(str).str.strip().ne("")].copy()
 
+# -----------------------------
+# Modo TV: telas financeiras, funil e rankings com rotação automática
+# -----------------------------
+tv_enabled = str(st.query_params.get("tv", "0")) == "1"
+if tv_enabled:
+    try:
+        tv_screen = int(st.query_params.get("tv_screen", "0"))
+    except (TypeError, ValueError):
+        tv_screen = 0
+    funil_tv = pd.DataFrame({"Etapa": ["Discadas", "Contatadas", "Agendadas", "Realizadas", "No-show", "Vendas"], "Quantidade": [int(daily_filtered["Discadas"].sum()) if not daily_filtered.empty else 0, contatadas, agendadas, realizadas, noshow, vendas]})
+    render_tv_mode(tv_screen, tv_seconds, inicio, fim, contrato, meta_valor, percentual_meta, recebido, falta_meta, falta_super, funil_tv, sdr_rank, closer_rank, daily_filtered)
+    st.stop()
+
 r1, r2 = st.columns(2)
 with r1:
-    st.markdown("<div class='panel'><div class='panel-title'>Ranking de vendas por SDR</div><div class='panel-caption'>Vendas fechadas atribuídas ao SDR/Hunter no período selecionado.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel'><div class='panel-title'>Ranking de vendas por SDR</div><div class='panel-caption'>Vendas contabilizadas pela coluna Venda da planilha de Pré Vendas.</div>", unsafe_allow_html=True)
     chart = sdr_rank.sort_values("Vendas").copy()
     if not chart.empty:
         winner = chart.loc[chart["Vendas"].idxmax(), "Nome"]
