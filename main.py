@@ -20,6 +20,7 @@ CYCLE_URL = "https://docs.google.com/spreadsheets/d/1U4RW4Ooi6ko-Db7dOgpdWJXFo_X
 PRE_URL = "https://docs.google.com/spreadsheets/d/1FnoxE7PC1TVNcnI_Vju97yhFB2uj1qnxgmVwAbRGcAk/edit?usp=sharing"
 SALES_GIDS = {"Agosto/26": "401481319", "Julho/26": "0", "Junho/26": "0"}
 CYCLE_GID = "1402401272"
+CYCLE_DASHBOARD_GID = "377925676"
 PRE_GID = "0"
 
 st.markdown("""
@@ -178,6 +179,40 @@ def parse_cycle(raw: pd.DataFrame):
     return df[df["Lead"].astype(str).str.strip().ne("")].copy()
 
 
+def parse_cycle_dashboard(raw: pd.DataFrame):
+    """Lê a aba Dashboard do ciclo como fonte oficial de contrato e líquido por venda."""
+    if raw.empty:
+        return pd.DataFrame(columns=["Lead", "Closer", "SDR", "Valor Contrato", "Valor Líquido", "Data"])
+    header = None
+    for i in range(min(20, len(raw))):
+        values = [str(v).strip().lower() for v in raw.iloc[i].tolist()]
+        if "lead" in values and any("closer" == v for v in values):
+            header = i
+            break
+    if header is None:
+        return pd.DataFrame(columns=["Lead", "Closer", "SDR", "Valor Contrato", "Valor Líquido", "Data"])
+    df = raw.iloc[header + 1:].copy()
+    df.columns = [str(x).strip() or f"col_{j}" for j, x in enumerate(raw.iloc[header].tolist())]
+    lead_col = next((c for c in df.columns if normalize_name(c) == "lead"), df.columns[0])
+    closer_col = next((c for c in df.columns if normalize_name(c) == "closer"), None)
+    sdr_col = next((c for c in df.columns if normalize_name(c) == "sdr"), None)
+    contrato_col = next((c for c in df.columns if "valor" in str(c).lower() and "contrato" in str(c).lower()), None)
+    liquido_col = next((c for c in df.columns if "valor" in str(c).lower() and "liquido" in str(c).lower()), None)
+    data_col = next((c for c in df.columns if "data fechamento" in str(c).lower()), None)
+    result = pd.DataFrame({
+        "Lead": df[lead_col].astype(str).str.strip(),
+        "Closer": df[closer_col].map(normalize_name) if closer_col else "",
+        "SDR": df[sdr_col].map(normalize_name) if sdr_col else "",
+        "Valor Contrato": df[contrato_col].map(money) if contrato_col else 0.0,
+        "Valor Líquido": df[liquido_col].map(money) if liquido_col else 0.0,
+        "Data": parse_date_series(df[data_col]) if data_col else pd.NaT,
+    })
+    result = result[(result["Lead"] != "") & ((result["Valor Contrato"] > 0) | (result["Valor Líquido"] > 0))].copy()
+    if result.empty:
+        return result
+    return result.groupby(["Lead", "Closer", "SDR"], dropna=False, as_index=False).agg({"Valor Contrato": "sum", "Valor Líquido": "sum", "Data": "min"})
+
+
 def parse_pre_vendas(raw: pd.DataFrame):
     # Bloco geral: a primeira coluna contém a data e B:I os totais do time.
     rows = []
@@ -264,11 +299,13 @@ except Exception as exc:
 try:
     raw_cycle = read_uploaded(cycle_upload) if cycle_upload else read_raw_sheet(cycle_url, CYCLE_GID)
     cycle = parse_cycle(raw_cycle)
+    raw_cycle_dashboard = read_raw_sheet(cycle_url, CYCLE_DASHBOARD_GID)
+    cycle_dashboard = parse_cycle_dashboard(raw_cycle_dashboard)
     for required_col in ["SDR", "Closer", "Data Entrada", "Data Contato", "Data Reunião", "Data Fechamento"]:
         if required_col not in cycle:
             cycle[required_col] = pd.NaT if required_col.startswith("Data") else ""
 except Exception as exc:
-    cycle = pd.DataFrame(); errors.append(f"Ciclo: {exc}")
+    cycle = pd.DataFrame(); cycle_dashboard = pd.DataFrame(); errors.append(f"Ciclo: {exc}")
 try:
     raw_pre = read_uploaded(pre_upload) if pre_upload else read_raw_sheet(pre_url, PRE_GID)
     daily, sdr_source = parse_pre_vendas(raw_pre)
@@ -294,6 +331,7 @@ def filter_date(df, column):
         return df.iloc[0:0].copy()
     return df[df[column].notna() & (df[column] >= inicio) & (df[column] <= fim + pd.Timedelta(days=1))].copy()
 
+cycle_dashboard_filtered = filter_date(cycle_dashboard, "Data")
 cycle_entry_filtered = filter_date(cycle, "Data Entrada")
 cycle_contact_filtered = filter_date(cycle, "Data Contato")
 cycle_meeting_filtered = filter_date(cycle, "Data Reunião")
@@ -302,13 +340,15 @@ cycle_close_filtered = filter_date(cycle, "Data Fechamento")
 cycle_filtered = pd.concat([cycle_entry_filtered, cycle_contact_filtered, cycle_meeting_filtered, cycle_close_filtered], ignore_index=True).drop_duplicates(subset=["Lead"]) if not cycle.empty else cycle.copy()
 daily_filtered = daily[(daily["Data"] >= inicio) & (daily["Data"] <= fim)] if not daily.empty else daily
 
-liquido_calculado = float(sales_filtered["Valor Líquido"].sum()) if not sales_filtered.empty and "Valor Líquido" in sales_filtered else 0.0
+dashboard_contrato = float(cycle_dashboard_filtered["Valor Contrato"].sum()) if not cycle_dashboard_filtered.empty else 0.0
+dashboard_liquido = float(cycle_dashboard_filtered["Valor Líquido"].sum()) if not cycle_dashboard_filtered.empty else 0.0
+liquido_calculado = dashboard_liquido if dashboard_liquido > 0 else (float(sales_filtered["Valor Líquido"].sum()) if not sales_filtered.empty and "Valor Líquido" in sales_filtered else 0.0)
 # Para o mês completo, preserva o Valor Recebido oficial informado no topo da aba mensal.
 # Para recortes diários ou personalizados, calcula somente as vendas dentro do recorte.
 resumo_mensal = periodo == "Mês atual"
-recebido = float(sheet_meta.get("recebido", 0)) if resumo_mensal and sheet_meta.get("recebido", 0) else liquido_calculado
-contrato_calculado = float(sales_filtered["Valor Contrato"].sum()) if not sales_filtered.empty and "Valor Contrato" in sales_filtered else 0.0
-contrato = float(sheet_meta.get("contrato_total", 0)) if resumo_mensal and sheet_meta.get("contrato_total", 0) else contrato_calculado
+recebido = liquido_calculado if dashboard_liquido > 0 else (float(sheet_meta.get("recebido", 0)) if resumo_mensal and sheet_meta.get("recebido", 0) else liquido_calculado)
+contrato_calculado = dashboard_contrato if dashboard_contrato > 0 else (float(sales_filtered["Valor Contrato"].sum()) if not sales_filtered.empty and "Valor Contrato" in sales_filtered else 0.0)
+contrato = contrato_calculado if dashboard_contrato > 0 else (float(sheet_meta.get("contrato_total", 0)) if resumo_mensal and sheet_meta.get("contrato_total", 0) else contrato_calculado)
 vendas = int(len(sales_filtered))
 realizadas = int(daily_filtered["Realizadas"].sum()) if not daily_filtered.empty else 0
 noshow = int(daily_filtered["No-show"].sum()) if not daily_filtered.empty else 0
@@ -331,7 +371,7 @@ st.markdown(f"<div class='hero-subtitle'>Período: <strong>{inicio.strftime('%d/
 if errors:
     st.warning("Alguma fonte não pôde ser carregada: " + " | ".join(errors))
 with st.expander("Status das fontes conectadas", expanded=False):
-    st.write({"Planilha de vendas": f"{len(sales)} linhas válidas", "Ciclo de vendas": f"{len(cycle)} leads", "Pré-vendas": f"{len(daily)} dias", "SDRs detectados": ", ".join(sdr_source["Nome"].tolist()) if not sdr_source.empty else "nenhum"})
+    st.write({"Planilha de vendas": f"{len(sales)} linhas válidas", "Ciclo de vendas": f"{len(cycle)} leads", "Dashboard financeiro": f"{len(cycle_dashboard)} vendas com valores", "Pré-vendas": f"{len(daily)} dias", "SDRs detectados": ", ".join(sdr_source["Nome"].tolist()) if not sdr_source.empty else "nenhum"})
 
 # -----------------------------
 # Financeiro
@@ -371,6 +411,8 @@ with right:
 st.markdown("<div class='section-kicker'>03 · Rankings de vendas e realizadas</div>", unsafe_allow_html=True)
 
 # Base de SDRs: ciclo para vendas/agendamentos e Pré Vendas para realizadas/no-show.
+# Realizadas são estritamente exibidas para William, Barbara e Vitoria.
+SDR_OFICIAIS = {"william", "barbara", "vitoria", "vitoria"}
 # Cada indicador usa a data da própria etapa, e não a data de entrada do Lead.
 rank_frames = []
 for frame, metric in [(cycle_contact_filtered, "Contatadas"), (cycle_meeting_filtered, "Agendadas"), (cycle_close_filtered, "Vendas")]:
@@ -391,24 +433,21 @@ for col in ["Contatadas", "Agendadas", "Vendas", "Realizadas_Ciclo", "Realizadas
     if col not in sdr_rank:
         sdr_rank[col] = 0
 sdr_rank = sdr_rank.fillna(0)
-sdr_rank["Realizadas"] = sdr_rank["Realizadas_Fonte"].where(sdr_rank["Realizadas_Fonte"] > 0, sdr_rank["Realizadas_Ciclo"]).astype(int)
+sdr_rank["Realizadas"] = sdr_rank["Realizadas_Fonte"].astype(int)
 sdr_rank["No-show"] = sdr_rank["No-show_Fonte"].astype(int)
+sdr_rank = sdr_rank[sdr_rank["Nome"].map(lambda x: re.sub(r"[^a-z]", "", str(x).lower().replace("á", "a").replace("í", "i")) in SDR_OFICIAIS)].copy()
 sdr_rank["Taxa Conversão"] = (sdr_rank["Vendas"] / sdr_rank["Realizadas"].replace(0, 1) * 100).round(2)
 
-# Base de Closers: realizadas vêm do ciclo; vendas e valores vêm da aba de vendas.
-if not cycle_meeting_filtered.empty:
-    closer_realizadas = cycle_meeting_filtered.groupby("Closer", dropna=False).size().reset_index(name="Realizadas").rename(columns={"Closer": "Nome"})
+# Base de Closers: quantidade, contrato e líquido vêm exclusivamente da aba Dashboard.
+if not cycle_dashboard_filtered.empty:
+    closer_rank = cycle_dashboard_filtered.groupby("Closer", dropna=False).agg(
+        Vendas=("Lead", "nunique"),
+        Valor=("Valor Contrato", "sum"),
+        Líquido=("Valor Líquido", "sum"),
+    ).reset_index().rename(columns={"Closer": "Nome"})
 else:
-    closer_realizadas = pd.DataFrame(columns=["Nome", "Realizadas"])
-if not sales_filtered.empty:
-    closer_vendas = sales_filtered.groupby("Closer", dropna=False).agg(Vendas=("Lead", "count"), Valor=("Valor Contrato", "sum")).reset_index().rename(columns={"Closer": "Nome"})
-else:
-    closer_vendas = pd.DataFrame(columns=["Nome", "Vendas", "Valor"])
-closer_rank = closer_realizadas.merge(closer_vendas, on="Nome", how="outer").fillna(0)
-if "Realizadas" not in closer_rank: closer_rank["Realizadas"] = 0
-if "Vendas" not in closer_rank: closer_rank["Vendas"] = 0
-if "Valor" not in closer_rank: closer_rank["Valor"] = 0.0
-closer_rank["Taxa Fechamento"] = (closer_rank["Vendas"] / closer_rank["Realizadas"].replace(0, 1) * 100).round(2)
+    closer_rank = pd.DataFrame(columns=["Nome", "Vendas", "Valor", "Líquido"])
+closer_rank = closer_rank[closer_rank["Nome"].astype(str).str.strip().ne("")].copy()
 
 r1, r2 = st.columns(2)
 with r1:
@@ -423,7 +462,7 @@ with r1:
     st.dataframe(sdr_rank[["Nome", "Vendas", "Realizadas", "Taxa Conversão"]].sort_values("Vendas", ascending=False), hide_index=True, use_container_width=True, height=180)
     st.markdown("</div>", unsafe_allow_html=True)
 with r2:
-    st.markdown("<div class='panel'><div class='panel-title'>Ranking de realizadas por SDR</div><div class='panel-caption'>Reuniões realizadas na fonte Pré Vendas, com fallback para o ciclo.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel'><div class='panel-title'>Ranking de realizadas por SDR</div><div class='panel-caption'>Somente William, Barbara e Vitoria; leitura da fonte de Pré Vendas.</div>", unsafe_allow_html=True)
     chart = sdr_rank.sort_values("Realizadas").copy()
     if not chart.empty:
         winner = chart.loc[chart["Realizadas"].idxmax(), "Nome"]
@@ -436,7 +475,7 @@ with r2:
 
 r3, r4 = st.columns(2)
 with r3:
-    st.markdown("<div class='panel'><div class='panel-title'>Ranking de vendas por Closer</div><div class='panel-caption'>Vendas fechadas e valor de contrato na aba mensal selecionada.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel'><div class='panel-title'>Ranking de vendas por Closer</div><div class='panel-caption'>Vendas, contrato e líquido oficiais da aba Dashboard do ciclo.</div>", unsafe_allow_html=True)
     chart = closer_rank.sort_values("Vendas").copy()
     if not chart.empty:
         winner = chart.loc[chart["Vendas"].idxmax(), "Nome"]
@@ -444,7 +483,7 @@ with r3:
         fig = px.bar(chart, x="Vendas", y="Nome", orientation="h", text="Vendas", color="Vendas", color_continuous_scale=[[0, "#236746"], [1, "#2ed47a"]])
         fig.update_traces(textposition="outside"); fig.update_layout(coloraxis_showscale=False, xaxis_title="Vendas", yaxis_title=""); fig_theme(fig, 245); st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     else: st.info("Nenhuma venda por Closer no período.")
-    st.dataframe(closer_rank[["Nome", "Vendas", "Valor", "Taxa Fechamento"]].sort_values("Vendas", ascending=False).assign(Valor=lambda d: d["Valor"].map(brl)), hide_index=True, use_container_width=True, height=180)
+    st.dataframe(closer_rank[["Nome", "Vendas", "Valor", "Líquido"]].sort_values("Valor", ascending=False).assign(Valor=lambda d: d["Valor"].map(brl), Líquido=lambda d: d["Líquido"].map(brl)), hide_index=True, use_container_width=True, height=180)
     st.markdown("</div>", unsafe_allow_html=True)
 with r4:
     st.markdown("<div class='panel'><div class='panel-title'>Ofertas pendentes e Riscos Zero</div><div class='panel-caption'>Cadastro manual separado das vendas realizadas; não entra na meta até a confirmação do pagamento.</div>", unsafe_allow_html=True)
