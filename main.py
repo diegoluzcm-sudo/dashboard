@@ -94,18 +94,23 @@ def parse_sales(raw: pd.DataFrame):
             header_idx = i
             break
     result = pd.DataFrame()
-    meta = {"recebido": 0.0, "meta": 0.0, "super_meta": 0.0, "liquido": 0.0}
-    for i in range(min(25, len(raw))):
+    meta = {"recebido": 0.0, "contrato_total": 0.0, "falta_meta": 0.0, "falta_super": 0.0, "ating_meta": 0.0, "ating_super": 0.0}
+    for i in range(min(35, len(raw))):
         row = " | ".join(str(x) for x in raw.iloc[i].tolist())
-        if "valor recebido" in row.lower():
-            nums = [money(x) for x in raw.iloc[i].tolist() if money(x)]
-            if nums: meta["recebido"] = nums[0]
-        if "valor de contrato (meta)" in row.lower():
-            nums = [money(x) for x in raw.iloc[i].tolist() if money(x)]
-            if nums: meta["meta"] = nums[0]
-        if "super meta" in row.lower() and not "falta" in row.lower():
-            nums = [money(x) for x in raw.iloc[i].tolist() if money(x)]
-            if nums: meta["super_meta"] = nums[0]
+        low = row.lower()
+        nums = [money(x) for x in raw.iloc[i].tolist() if money(x)]
+        if "valor recebido" in low and nums:
+            meta["recebido"] = nums[0]
+        if "valor de contrato (meta)" in low and nums:
+            meta["contrato_total"] = nums[0]
+        if "quanto falta pra super meta" in low and nums:
+            meta["falta_super"] = nums[0]
+        elif "quanto falta pra meta" in low and nums:
+            meta["falta_meta"] = nums[0]
+        if "quanto atingimos da super meta" in low and nums:
+            meta["ating_super"] = nums[0]
+        elif "quanto atingimos da meta" in low and nums:
+            meta["ating_meta"] = nums[0]
     if header_idx is None:
         return result, meta
     headers = [str(x).strip() or f"col_{j}" for j, x in enumerate(raw.iloc[header_idx].tolist())]
@@ -138,6 +143,8 @@ def parse_sales(raw: pd.DataFrame):
         result = result.groupby(["Lead", "Closer", "SDR"], dropna=False, as_index=False).agg({"Valor Contrato": "sum", "Valor Líquido": "sum", "Data": "min"})
     if meta["recebido"] == 0 and not result.empty:
         meta["recebido"] = result["Valor Líquido"].sum()
+    if meta["contrato_total"] == 0 and not result.empty:
+        meta["contrato_total"] = result["Valor Contrato"].sum()
     return result.reset_index(drop=True), meta
 
 
@@ -230,7 +237,7 @@ else:
     fim = pd.Timestamp(st.sidebar.date_input("Data final", hoje.date()))
 st.sidebar.divider()
 st.sidebar.subheader("Metas do período")
-meta_valor_manual = st.sidebar.number_input("Meta de valor de contrato", min_value=0.0, value=78049.60, step=1000.0)
+meta_valor_manual = st.sidebar.number_input("Meta de valor de contrato", min_value=0.0, value=425000.0, step=1000.0)
 meta_super_manual = st.sidebar.number_input("Super meta de valor", min_value=0.0, value=500000.0, step=1000.0)
 meta_vendas = st.sidebar.number_input("Meta de vendas", min_value=0, value=10, step=1)
 meta_realizadas = st.sidebar.number_input("Meta de reuniões realizadas", min_value=0, value=54, step=1)
@@ -252,7 +259,7 @@ try:
     raw_sales = read_uploaded(sales_upload) if sales_upload else read_raw_sheet(sales_url, SALES_GIDS[sales_month])
     sales, sheet_meta = parse_sales(raw_sales)
 except Exception as exc:
-    sales, sheet_meta = pd.DataFrame(), {"recebido": 0, "meta": 0, "super_meta": 0, "liquido": 0}
+    sales, sheet_meta = pd.DataFrame(), {"recebido": 0, "contrato_total": 0, "falta_meta": 0, "falta_super": 0, "ating_meta": 0, "ating_super": 0}
     errors.append(f"Vendas: {exc}")
 try:
     raw_cycle = read_uploaded(cycle_upload) if cycle_upload else read_raw_sheet(cycle_url, CYCLE_GID)
@@ -298,14 +305,21 @@ daily_filtered = daily[(daily["Data"] >= inicio) & (daily["Data"] <= fim)] if no
 liquido_calculado = float(sales_filtered["Valor Líquido"].sum()) if not sales_filtered.empty and "Valor Líquido" in sales_filtered else 0.0
 # Para o mês completo, preserva o Valor Recebido oficial informado no topo da aba mensal.
 # Para recortes diários ou personalizados, calcula somente as vendas dentro do recorte.
-recebido = float(sheet_meta.get("recebido", 0)) if periodo == "Mês atual" and sheet_meta.get("recebido", 0) else liquido_calculado
-contrato = float(sales_filtered["Valor Contrato"].sum()) if not sales_filtered.empty and "Valor Contrato" in sales_filtered else 0.0
+resumo_mensal = periodo == "Mês atual"
+recebido = float(sheet_meta.get("recebido", 0)) if resumo_mensal and sheet_meta.get("recebido", 0) else liquido_calculado
+contrato_calculado = float(sales_filtered["Valor Contrato"].sum()) if not sales_filtered.empty and "Valor Contrato" in sales_filtered else 0.0
+contrato = float(sheet_meta.get("contrato_total", 0)) if resumo_mensal and sheet_meta.get("contrato_total", 0) else contrato_calculado
 vendas = int(len(sales_filtered))
 realizadas = int(daily_filtered["Realizadas"].sum()) if not daily_filtered.empty else 0
 noshow = int(daily_filtered["No-show"].sum()) if not daily_filtered.empty else 0
 contatadas = int(daily_filtered["Contatadas"].sum()) if not daily_filtered.empty else 0
 agendadas = int(daily_filtered["Agendadas"].sum()) if not daily_filtered.empty else 0
-meta_valor = float(meta_valor_manual or sheet_meta.get("meta", 0))
+falta_meta = float(sheet_meta.get("falta_meta", 0)) if resumo_mensal and sheet_meta.get("falta_meta", 0) else max(float(meta_valor_manual) - contrato, 0)
+falta_super = float(sheet_meta.get("falta_super", 0)) if resumo_mensal and sheet_meta.get("falta_super", 0) else max(float(meta_super_manual) - contrato, 0)
+# No resumo mensal, a planilha informa o saldo que falta para cada meta.
+# Assim, a meta oficial é contrato realizado + saldo restante, e não um valor padrão.
+meta_valor = contrato + falta_meta if resumo_mensal and falta_meta else float(meta_valor_manual)
+meta_super = contrato + falta_super if resumo_mensal and falta_super else float(meta_super_manual)
 percentual_meta = (contrato / meta_valor * 100) if meta_valor else 0
 
 # -----------------------------
@@ -323,13 +337,14 @@ with st.expander("Status das fontes conectadas", expanded=False):
 # Financeiro
 # -----------------------------
 st.markdown("<div class='section-kicker'>01 · Visão geral financeira</div>", unsafe_allow_html=True)
-c1,c2,c3,c4,c5=st.columns(5)
-with c1: card("Valor Recebido", brl(recebido), "Valor líquido das vendas", "positive")
-with c2: card("Valor de Contrato", brl(contrato), "Vendas no período", "positive")
+c1,c2,c3,c4,c5,c6=st.columns(6)
+with c1: card("Valor de Contrato", brl(contrato), "Total oficial da aba mensal", "positive")
+with c2: card("Meta", brl(meta_valor), "Objetivo oficial do período", "warning")
 with c3:
-    st.markdown(f"<div class='metric-card'><div class='metric-label'>% da Meta Atingida</div><div class='metric-value'>{percentual_meta:.2f}%</div><div class='progress-shell'><div class='progress-bar' style='width:{min(percentual_meta,100):.2f}%'></div></div><div class='metric-note'>Meta: {brl(meta_valor)}</div></div>", unsafe_allow_html=True)
-with c4: card("Falta pra Meta", brl(max(meta_valor-contrato,0)), "Saldo para atingir", "warning")
-with c5: card("Falta pra Super Meta", brl(max(meta_super_manual-contrato,0)), "Cenário stretch", "critical")
+    st.markdown(f"<div class='metric-card'><div class='metric-label'>% da Meta Atingida</div><div class='metric-value'>{percentual_meta:.2f}%</div><div class='progress-shell'><div class='progress-bar' style='width:{min(percentual_meta,100):.2f}%'></div></div><div class='metric-note'>Contrato: {brl(contrato)} de {brl(meta_valor)}</div></div>", unsafe_allow_html=True)
+with c4: card("Valor Recebido", brl(recebido), "Valor líquido oficial", "positive")
+with c5: card("Falta pra Meta", brl(falta_meta), "Saldo oficial para atingir", "warning")
+with c6: card("Falta pra Super Meta", brl(falta_super), "Saldo oficial do cenário stretch", "critical")
 
 # -----------------------------
 # Funil e série temporal
