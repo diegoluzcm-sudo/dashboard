@@ -16,7 +16,7 @@ st.set_page_config(page_title="Performance Comercial", page_icon="📈", layout=
 
 # Reexecuta o app automaticamente para buscar alterações das planilhas sem interação manual.
 AUTO_REFRESH_MS = 5 * 60 * 1000
-st_autorefresh(interval=AUTO_REFRESH_MS, limit=None, key="planilhas_auto_refresh")
+refresh_tick = st_autorefresh(interval=AUTO_REFRESH_MS, limit=None, key="planilhas_auto_refresh")
 
 # -----------------------------
 # Configuração das fontes
@@ -46,7 +46,7 @@ def sheet_csv_url(sheet_url: str, gid: str) -> str:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def read_raw_sheet(sheet_url: str, gid: str) -> pd.DataFrame:
+def read_raw_sheet(sheet_url: str, gid: str, refresh_key: int = 0) -> pd.DataFrame:
     return pd.read_csv(sheet_csv_url(sheet_url, gid), header=None, dtype=str, keep_default_na=False)
 
 
@@ -370,15 +370,15 @@ if st.sidebar.button("Abrir Modo TV", type="primary", use_container_width=True):
 # -----------------------------
 errors = []
 try:
-    raw_sales = read_uploaded(sales_upload) if sales_upload else read_raw_sheet(sales_url, SALES_GIDS[sales_month])
+    raw_sales = read_uploaded(sales_upload) if sales_upload else read_raw_sheet(sales_url, SALES_GIDS[sales_month], refresh_tick)
     sales, sheet_meta = parse_sales(raw_sales)
 except Exception as exc:
     sales, sheet_meta = pd.DataFrame(), {"recebido": 0, "contrato_total": 0, "falta_meta": 0, "falta_super": 0, "ating_meta": 0, "ating_super": 0}
     errors.append(f"Vendas: {exc}")
 try:
-    raw_cycle = read_uploaded(cycle_upload) if cycle_upload else read_raw_sheet(cycle_url, CYCLE_GID)
+    raw_cycle = read_uploaded(cycle_upload) if cycle_upload else read_raw_sheet(cycle_url, CYCLE_GID, refresh_tick)
     cycle = parse_cycle(raw_cycle)
-    raw_cycle_dashboard = read_raw_sheet(cycle_url, CYCLE_DASHBOARD_GID)
+    raw_cycle_dashboard = read_raw_sheet(cycle_url, CYCLE_DASHBOARD_GID, refresh_tick)
     cycle_dashboard = parse_cycle_dashboard(raw_cycle_dashboard)
     for required_col in ["SDR", "Closer", "Data Entrada", "Data Contato", "Data Reunião", "Data Fechamento"]:
         if required_col not in cycle:
@@ -386,7 +386,7 @@ try:
 except Exception as exc:
     cycle = pd.DataFrame(); cycle_dashboard = pd.DataFrame(); errors.append(f"Ciclo: {exc}")
 try:
-    raw_pre = read_uploaded(pre_upload) if pre_upload else read_raw_sheet(pre_url, PRE_GID)
+    raw_pre = read_uploaded(pre_upload) if pre_upload else read_raw_sheet(pre_url, PRE_GID, refresh_tick)
     daily, sdr_source = parse_pre_vendas(raw_pre)
     if not sdr_source.empty and "Data" in sdr_source:
         sdr_source = sdr_source[(sdr_source["Data"] >= inicio) & (sdr_source["Data"] <= fim)].groupby("Nome", as_index=False)[["Realizadas", "No-show", "Vendas"]].sum()
